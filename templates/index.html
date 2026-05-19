@@ -32,25 +32,92 @@
 
   #map { flex:1; }
 
-  select {
+  .secao-titulo {
+    font-size:12px; font-weight:700; text-transform:uppercase;
+    color:#660099; letter-spacing:0.5px;
+    border-bottom:2px solid #f0e0ff; padding-bottom:4px;
+    margin-bottom:10px;
+  }
+
+  /* Formulário de adição manual */
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .form-group { display:flex; flex-direction:column; gap:4px; }
+  .form-group label { font-size:11px; font-weight:600; color:#555; }
+  .form-group input, .form-group select {
+    padding:8px 10px; border-radius:7px;
+    border:2px solid #e0d0f0; font-size:13px; outline:none;
+    transition:border 0.2s;
+  }
+  .form-group input:focus, .form-group select:focus { border-color:#660099; }
+
+  .btn-add {
+    width:100%; padding:10px;
+    background:linear-gradient(135deg,#4a0070,#660099);
+    color:white; border:none; border-radius:8px;
+    font-size:13px; font-weight:600; cursor:pointer;
+    margin-top:4px; transition:opacity 0.2s;
+  }
+  .btn-add:hover { opacity:0.9; }
+
+  .msg-erro-form {
+    font-size:12px; color:#c62828; background:#ffebee;
+    padding:7px 10px; border-radius:6px;
+    border-left:3px solid #c62828; display:none;
+  }
+
+  /* Lista de fazendas */
+  .fazenda-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 10px; border-radius:8px;
+    background:#faf5ff; border:1px solid #e8d8f8;
+    font-size:13px; cursor:pointer; transition:background 0.15s;
+  }
+  .fazenda-item:hover { background:#f3e5ff; }
+  .fazenda-item.ativa { background:#ede0ff; border-color:#9c27b0; }
+  .fazenda-nome { font-weight:600; color:#4a0070; }
+  .fazenda-coords { font-size:11px; color:#888; margin-top:2px; }
+  .btn-remover {
+    background:none; border:none; cursor:pointer;
+    color:#ccc; font-size:16px; padding:2px 6px;
+    border-radius:4px; transition:color 0.2s;
+    flex-shrink:0;
+  }
+  .btn-remover:hover { color:#c62828; }
+
+  .lista-vazia { font-size:13px; color:#aaa; text-align:center; padding:12px 0; }
+
+  /* Upload */
+  .upload-area {
+    border: 2px dashed #d0a8f0; border-radius:10px; padding:12px;
+    text-align:center; cursor:pointer; transition: all 0.2s; background:#faf5ff;
+  }
+  .upload-area:hover, .upload-area.dragover { border-color:#660099; background:#f3e5ff; }
+  .upload-area p { font-size:12px; color:#660099; margin-top:4px; }
+  .upload-area small { font-size:11px; color:#999; }
+  #upload-input { display:none; }
+  .upload-status { font-size:12px; padding:7px 10px; border-radius:7px; display:none; margin-top:6px; }
+  .upload-ok   { background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; }
+  .upload-erro { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
+
+  /* Select */
+  select.select-fazenda {
     width:100%; padding:9px 12px; border-radius:8px;
     border:2px solid #660099; font-size:13px; color:#333;
     background:white; cursor:pointer; outline:none;
   }
 
+  /* Clima */
+  #loading { display:none; text-align:center; padding:20px; color:#660099; font-size:13px; }
+
   .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .card {
     background: #f9f5ff; border-radius:10px;
-    padding: 10px 12px; text-align:center;
-    border: 1px solid #e0d0f0;
+    padding: 10px 12px; text-align:center; border: 1px solid #e0d0f0;
   }
   .card .valor { font-size:22px; font-weight:700; color:#660099; }
   .card .label { font-size:11px; color:#666; margin-top:2px; }
 
-  .rec-card {
-    border-radius:10px; padding:12px 14px;
-    font-size:13px; line-height:1.5; border-left: 5px solid;
-  }
+  .rec-card { border-radius:10px; padding:12px 14px; font-size:13px; line-height:1.5; border-left: 5px solid; }
   .rec-ok    { background:#e8f5e9; border-color:#388e3c; color:#1b5e20; }
   .rec-warn  { background:#fff8e1; border-color:#f9a825; color:#6d4c00; }
   .rec-alert { background:#ffebee; border-color:#c62828; color:#7f0000; }
@@ -58,55 +125,11 @@
 
   .janela-item {
     background:#f3e5ff; border-radius:8px; padding:8px 12px; font-size:12px;
-    display:flex; justify-content:space-between; align-items:center;
-    border:1px solid #d0a8f0;
+    display:flex; justify-content:space-between; align-items:center; border:1px solid #d0a8f0;
   }
-  .janela-badge {
-    background:#660099; color:white;
-    padding:2px 8px; border-radius:20px; font-size:11px;
-  }
+  .janela-badge { background:#660099; color:white; padding:2px 8px; border-radius:20px; font-size:11px; }
 
-  .secao-titulo {
-    font-size:12px; font-weight:700; text-transform:uppercase;
-    color:#660099; letter-spacing:0.5px;
-    border-bottom:2px solid #f0e0ff; padding-bottom:4px;
-  }
-
-  #loading { display:none; text-align:center; padding:20px; color:#660099; font-size:13px; }
-
-  #grafico-container {
-    background:white; border-radius:10px;
-    padding:12px; border:1px solid #e0d0f0;
-  }
-
-  /* Upload */
-  .upload-area {
-    border: 2px dashed #d0a8f0;
-    border-radius:10px; padding:16px;
-    text-align:center; cursor:pointer;
-    transition: all 0.2s; background:#faf5ff;
-  }
-  .upload-area:hover { border-color:#660099; background:#f3e5ff; }
-  .upload-area.dragover { border-color:#660099; background:#f3e5ff; }
-  .upload-area p { font-size:13px; color:#660099; margin-top:6px; }
-  .upload-area small { font-size:11px; color:#999; }
-
-  #upload-input { display:none; }
-
-  .upload-status {
-    font-size:12px; padding:8px 12px; border-radius:8px;
-    display:none;
-  }
-  .upload-ok    { background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; }
-  .upload-erro  { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
-
-  .btn-limpar {
-    width:100%; padding:8px;
-    background:white; border:2px solid #e0d0f0;
-    border-radius:8px; color:#666; font-size:12px;
-    cursor:pointer; transition:all 0.2s; display:none;
-  }
-  .btn-limpar:hover { border-color:#c62828; color:#c62828; }
+  #grafico-container { background:white; border-radius:10px; padding:12px; border:1px solid #e0d0f0; }
 </style>
 </head>
 <body>
@@ -120,100 +143,116 @@
 </header>
 
 <div class="container">
+<div id="sidebar">
 
-  <div id="sidebar">
+  <!-- ADICIONAR MANUALMENTE -->
+  <div>
+    <div class="secao-titulo">📍 Adicionar Localização</div>
 
-    <!-- UPLOAD -->
-    <div>
-      <div class="secao-titulo" style="margin-bottom:8px">📂 Base Geográfica</div>
-
-      <div class="upload-area" onclick="document.getElementById('upload-input').click()"
-           ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">
-        <div style="font-size:28px">📁</div>
-        <p>Clique ou arraste seu arquivo aqui</p>
-        <small>CSV ou GeoJSON com fazendas</small>
-      </div>
-      <input type="file" id="upload-input" accept=".csv,.geojson,.json" onchange="uploadArquivo(this.files[0])">
-
-      <div id="upload-status" class="upload-status" style="margin-top:8px;"></div>
-
-      <button class="btn-limpar" id="btn-limpar" onclick="limparBase()">
-        ✕ Remover base carregada e usar exemplos
-      </button>
-
-      <div style="margin-top:8px; font-size:11px; color:#aaa;">
-        CSV esperado: colunas <code>nome, lat, lon, cultura</code>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Nome</label>
+        <input type="text" id="f-nome" placeholder="Ex: Fazenda Boa Vista">
       </div>
     </div>
 
-    <!-- SELEÇÃO DE FAZENDA -->
-    <div>
-      <div class="secao-titulo" style="margin-bottom:8px">📍 Selecione a Fazenda</div>
-      <select id="select-fazenda" onchange="carregarFazenda()">
-        <option value="">— escolha uma fazenda —</option>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group">
+        <label>Latitude</label>
+        <input type="number" id="f-lat" placeholder="-15.7801" step="any">
+      </div>
+      <div class="form-group">
+        <label>Longitude</label>
+        <input type="number" id="f-lon" placeholder="-47.9292" step="any">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:8px;">
+      <label>Cultura</label>
+      <select id="f-cultura">
+        <option value="soja">Soja</option>
+        <option value="milho">Milho</option>
+        <option value="cafe">Café</option>
+        <option value="cana">Cana-de-açúcar</option>
+        <option value="algodao">Algodão</option>
+        <option value="trigo">Trigo</option>
+        <option value="outros">Outros</option>
       </select>
     </div>
 
-    <div id="loading">⏳ Buscando dados climáticos...</div>
+    <div id="erro-form" class="msg-erro-form"></div>
+    <button class="btn-add" onclick="adicionarFazenda()">+ Adicionar no mapa</button>
+  </div>
 
-    <div id="conteudo" style="display:none; flex-direction:column; gap:14px;">
+  <!-- UPLOAD DE ARQUIVO -->
+  <div>
+    <div class="secao-titulo">📂 Ou importe um arquivo</div>
+    <div class="upload-area" onclick="document.getElementById('upload-input').click()"
+         ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">
+      <div style="font-size:22px">📁</div>
+      <p>Clique ou arraste CSV / GeoJSON</p>
+      <small>Colunas: nome, lat, lon, cultura</small>
+    </div>
+    <input type="file" id="upload-input" accept=".csv,.geojson,.json" onchange="uploadArquivo(this.files[0])">
+    <div id="upload-status" class="upload-status"></div>
+  </div>
 
-      <div>
-        <div class="secao-titulo" style="margin-bottom:8px">🌡️ Condições Atuais</div>
-        <div class="cards-grid">
-          <div class="card">
-            <div class="valor" id="val-temp">--</div>
-            <div class="label">🌡️ Temperatura</div>
-          </div>
-          <div class="card">
-            <div class="valor" id="val-umid">--</div>
-            <div class="label">💧 Umidade</div>
-          </div>
-          <div class="card">
-            <div class="valor" id="val-vento">--</div>
-            <div class="label">💨 Vento km/h</div>
-          </div>
-          <div class="card">
-            <div class="valor" id="val-gd">--</div>
-            <div class="label">🌱 Graus-dia</div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="secao-titulo" style="margin-bottom:8px">📋 Recomendações</div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <div id="rec-irrigacao" class="rec-card rec-ok">
-            <div class="rec-title">💧 Irrigação</div>
-            <div id="rec-irrigacao-texto">--</div>
-          </div>
-          <div id="rec-pulv" class="rec-card rec-ok">
-            <div class="rec-title">🌿 Pulverização</div>
-            <div id="rec-pulv-texto">--</div>
-          </div>
-          <div id="rec-geada" class="rec-card rec-ok">
-            <div class="rec-title">🥶 Geada</div>
-            <div id="rec-geada-texto">--</div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="secao-titulo" style="margin-bottom:8px">🕐 Melhores Janelas p/ Pulverizar</div>
-        <div id="janelas" style="display:flex; flex-direction:column; gap:6px;"></div>
-      </div>
-
-      <div>
-        <div class="secao-titulo" style="margin-bottom:8px">📈 Previsão 7 Dias</div>
-        <div id="grafico-container">
-          <canvas id="grafico" height="180"></canvas>
-        </div>
-      </div>
-
+  <!-- LISTA DE LOCALIZAÇÕES -->
+  <div>
+    <div class="secao-titulo" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>🗂️ Localizações</span>
+      <span id="contador" style="font-size:11px;color:#aaa;text-transform:none;font-weight:400;"></span>
+    </div>
+    <div id="lista-fazendas">
+      <div class="lista-vazia">Nenhuma localização adicionada.</div>
     </div>
   </div>
 
-  <div id="map"></div>
+  <!-- DADOS CLIMÁTICOS -->
+  <div id="loading">⏳ Buscando dados climáticos...</div>
+
+  <div id="conteudo" style="display:none; flex-direction:column; gap:14px;">
+    <div>
+      <div class="secao-titulo">🌡️ Condições Atuais</div>
+      <div class="cards-grid">
+        <div class="card"><div class="valor" id="val-temp">--</div><div class="label">🌡️ Temperatura</div></div>
+        <div class="card"><div class="valor" id="val-umid">--</div><div class="label">💧 Umidade</div></div>
+        <div class="card"><div class="valor" id="val-vento">--</div><div class="label">💨 Vento km/h</div></div>
+        <div class="card"><div class="valor" id="val-gd">--</div><div class="label">🌱 Graus-dia</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="secao-titulo">📋 Recomendações</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div id="rec-irrigacao" class="rec-card rec-ok">
+          <div class="rec-title">💧 Irrigação</div>
+          <div id="rec-irrigacao-texto">--</div>
+        </div>
+        <div id="rec-pulv" class="rec-card rec-ok">
+          <div class="rec-title">🌿 Pulverização</div>
+          <div id="rec-pulv-texto">--</div>
+        </div>
+        <div id="rec-geada" class="rec-card rec-ok">
+          <div class="rec-title">🥶 Geada</div>
+          <div id="rec-geada-texto">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="secao-titulo">🕐 Melhores Janelas p/ Pulverizar</div>
+      <div id="janelas" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+
+    <div>
+      <div class="secao-titulo">📈 Previsão 7 Dias</div>
+      <div id="grafico-container"><canvas id="grafico" height="180"></canvas></div>
+    </div>
+  </div>
+
+</div>
+<div id="map"></div>
 </div>
 
 <script>
@@ -222,108 +261,151 @@
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-  let marker = null;
+  let markerAtivo = null;
+  let marcadoresLista = {};
   let grafico = null;
-  let marcadores = [];
+  let fazendas = [];
 
-  // ─── UPLOAD ───────────────────────────────────────────
+  // ─── ADICIONAR MANUALMENTE ─────────────────────────────
 
-  function dragOver(e) {
-    e.preventDefault();
-    e.currentTarget.classList.add('dragover');
+  async function adicionarFazenda() {
+    const nome    = document.getElementById('f-nome').value.trim();
+    const lat     = document.getElementById('f-lat').value.trim();
+    const lon     = document.getElementById('f-lon').value.trim();
+    const cultura = document.getElementById('f-cultura').value;
+    const erro    = document.getElementById('erro-form');
+
+    if (!lat || !lon) {
+      erro.textContent = 'Latitude e longitude são obrigatórias.';
+      erro.style.display = 'block';
+      return;
+    }
+    erro.style.display = 'none';
+
+    const res  = await fetch('/api/fazendas', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ nome, lat: parseFloat(lat), lon: parseFloat(lon), cultura })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // limpa formulário
+      document.getElementById('f-nome').value = '';
+      document.getElementById('f-lat').value  = '';
+      document.getElementById('f-lon').value  = '';
+      fazendas.push(data.fazenda);
+      renderLista();
+      adicionarMarcador(data.fazenda);
+      map.setView([data.fazenda.lat, data.fazenda.lon], 13);
+    } else {
+      erro.textContent = data.erro;
+      erro.style.display = 'block';
+    }
   }
+
+  async function removerFazenda(id) {
+    await fetch(`/api/fazendas/${id}`, { method: 'DELETE' });
+    if (marcadoresLista[id]) {
+      map.removeLayer(marcadoresLista[id]);
+      delete marcadoresLista[id];
+    }
+    fazendas = fazendas.filter(f => f.id !== id);
+    renderLista();
+    // esconde painel climático se era a fazenda ativa
+    if (markerAtivo) {
+      document.getElementById('conteudo').style.display = 'none';
+      document.getElementById('loading').style.display = 'none';
+    }
+  }
+
+  function renderLista() {
+    const lista = document.getElementById('lista-fazendas');
+    document.getElementById('contador').textContent = fazendas.length ? `${fazendas.length} localização(ões)` : '';
+
+    if (!fazendas.length) {
+      lista.innerHTML = '<div class="lista-vazia">Nenhuma localização adicionada.</div>';
+      return;
+    }
+
+    lista.innerHTML = fazendas.map(f => `
+      <div class="fazenda-item" id="item-${f.id}" onclick="selecionarFazenda(${f.id})">
+        <div>
+          <div class="fazenda-nome">🌾 ${f.nome}</div>
+          <div class="fazenda-coords">${f.lat.toFixed(4)}, ${f.lon.toFixed(4)} · ${f.cultura}</div>
+        </div>
+        <button class="btn-remover" onclick="event.stopPropagation(); removerFazenda(${f.id})" title="Remover">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function adicionarMarcador(f) {
+    const m = L.marker([f.lat, f.lon])
+      .addTo(map)
+      .bindPopup(`<b>🌾 ${f.nome}</b><br>${f.cultura}`);
+    m.on('click', () => selecionarFazenda(f.id));
+    marcadoresLista[f.id] = m;
+  }
+
+  function selecionarFazenda(id) {
+    const f = fazendas.find(x => x.id === id);
+    if (!f) return;
+
+    // destaca item na lista
+    document.querySelectorAll('.fazenda-item').forEach(el => el.classList.remove('ativa'));
+    const item = document.getElementById(`item-${id}`);
+    if (item) item.classList.add('ativa');
+
+    map.setView([f.lat, f.lon], 13);
+    marcadoresLista[id]?.openPopup();
+    carregarClima(f.lat, f.lon, f.cultura, f.nome);
+  }
+
+  // ─── UPLOAD ────────────────────────────────────────────
+
+  function dragOver(e) { e.preventDefault(); e.currentTarget.classList.add('dragover'); }
   function dragLeave(e) { e.currentTarget.classList.remove('dragover'); }
-  function drop(e) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('dragover');
-    uploadArquivo(e.dataTransfer.files[0]);
-  }
+  function drop(e) { e.preventDefault(); e.currentTarget.classList.remove('dragover'); uploadArquivo(e.dataTransfer.files[0]); }
 
   async function uploadArquivo(arquivo) {
     if (!arquivo) return;
     const status = document.getElementById('upload-status');
-    status.className = 'upload-status';
-    status.style.display = 'block';
-    status.textContent = '⏳ Processando arquivo...';
+    status.className = 'upload-status'; status.style.display = 'block';
+    status.textContent = '⏳ Processando...';
 
     const form = new FormData();
     form.append('arquivo', arquivo);
-
     const res  = await fetch('/api/fazendas/upload', { method: 'POST', body: form });
     const data = await res.json();
 
     if (data.ok) {
       status.className = 'upload-status upload-ok';
-      status.textContent = `✅ ${data.total} fazenda(s) carregada(s) de "${arquivo.name}"`;
-      document.getElementById('btn-limpar').style.display = 'block';
-      await popularSelect();
-      adicionarMarcadores(data.fazendas);
+      status.textContent = `✅ ${data.total} localização(ões) importada(s)`;
+      fazendas = data.fazendas;
+      // remove marcadores antigos e adiciona os novos
+      Object.values(marcadoresLista).forEach(m => map.removeLayer(m));
+      marcadoresLista = {};
+      fazendas.forEach(f => adicionarMarcador(f));
+      renderLista();
+      if (fazendas.length) {
+        const bounds = L.latLngBounds(fazendas.map(f => [f.lat, f.lon]));
+        map.fitBounds(bounds, { padding: [40, 40] });
+      }
     } else {
       status.className = 'upload-status upload-erro';
       status.textContent = `❌ ${data.erro}`;
     }
   }
 
-  async function limparBase() {
-    await fetch('/api/fazendas/limpar', { method: 'POST' });
-    document.getElementById('upload-status').style.display = 'none';
-    document.getElementById('btn-limpar').style.display = 'none';
-    document.getElementById('upload-input').value = '';
-    await popularSelect();
-    removerMarcadores();
-  }
+  // ─── CLIMA ─────────────────────────────────────────────
 
-  // ─── SELECT / MAPA ────────────────────────────────────
-
-  async function popularSelect() {
-    const res = await fetch('/api/fazendas');
-    const fazendas = await res.json();
-    const select = document.getElementById('select-fazenda');
-    select.innerHTML = '<option value="">— escolha uma fazenda —</option>';
-    fazendas.forEach(f => {
-      const opt = document.createElement('option');
-      opt.value = `${f.lat},${f.lon},${f.cultura},${f.nome}`;
-      opt.textContent = f.nome;
-      select.appendChild(opt);
-    });
-    return fazendas;
-  }
-
-  function adicionarMarcadores(fazendas) {
-    removerMarcadores();
-    fazendas.forEach(f => {
-      const m = L.marker([f.lat, f.lon])
-        .addTo(map)
-        .bindPopup(`<b>🌾 ${f.nome}</b><br>${f.cultura}`);
-      marcadores.push(m);
-    });
-    if (fazendas.length > 0) {
-      const bounds = L.latLngBounds(fazendas.map(f => [f.lat, f.lon]));
-      map.fitBounds(bounds, { padding: [40, 40] });
-    }
-  }
-
-  function removerMarcadores() {
-    marcadores.forEach(m => map.removeLayer(m));
-    marcadores = [];
-  }
-
-  function classRec(texto) {
-    if (texto.includes('❌') || texto.includes('URGENTE') || texto.includes('ALERTA')) return 'rec-alert';
-    if (texto.includes('⚠️') || texto.includes('Recomendado')) return 'rec-warn';
+  function classRec(t) {
+    if (t.includes('❌') || t.includes('URGENTE') || t.includes('ALERTA')) return 'rec-alert';
+    if (t.includes('⚠️') || t.includes('Recomendado')) return 'rec-warn';
     return 'rec-ok';
   }
 
-  async function carregarFazenda() {
-    const val = document.getElementById('select-fazenda').value;
-    if (!val) return;
-
-    const [lat, lon, cultura, nome] = val.split(',');
-
-    if (marker) map.removeLayer(marker);
-    marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>🌾 ${nome}</b>`).openPopup();
-    map.setView([lat, lon], 13);
-
+  async function carregarClima(lat, lon, cultura, nome) {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('conteudo').style.display = 'none';
 
@@ -362,27 +444,23 @@
         : `<div style="color:#999;font-size:13px;">Nenhuma janela ideal nas próximas 48h</div>`;
 
       const labels = dados.previsao_dias.map(d => d.data.slice(5));
-      const maxs   = dados.previsao_dias.map(d => d.temp_max);
-      const mins   = dados.previsao_dias.map(d => d.temp_min);
-      const chuvas = dados.previsao_dias.map(d => d.chuva);
-
       if (grafico) grafico.destroy();
       grafico = new Chart(document.getElementById('grafico'), {
         type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: 'Chuva (%)', data: chuvas, backgroundColor: 'rgba(102,0,153,0.2)', borderColor: '#660099', borderWidth: 1, yAxisID: 'y1', type: 'bar' },
-            { label: 'Máx °C',   data: maxs,   borderColor: '#d32f2f', backgroundColor: 'transparent', borderWidth: 2, type: 'line', yAxisID: 'y', tension: 0.4, pointRadius: 3 },
-            { label: 'Mín °C',   data: mins,   borderColor: '#1976d2', backgroundColor: 'transparent', borderWidth: 2, type: 'line', yAxisID: 'y', tension: 0.4, pointRadius: 3 }
+            { label: 'Chuva (%)', data: dados.previsao_dias.map(d => d.chuva), backgroundColor: 'rgba(102,0,153,0.2)', borderColor: '#660099', borderWidth: 1, yAxisID: 'y1' },
+            { label: 'Máx °C',   data: dados.previsao_dias.map(d => d.temp_max), borderColor: '#d32f2f', backgroundColor: 'transparent', borderWidth: 2, type: 'line', yAxisID: 'y', tension: 0.4, pointRadius: 3 },
+            { label: 'Mín °C',   data: dados.previsao_dias.map(d => d.temp_min), borderColor: '#1976d2', backgroundColor: 'transparent', borderWidth: 2, type: 'line', yAxisID: 'y', tension: 0.4, pointRadius: 3 }
           ]
         },
         options: {
           responsive: true,
           plugins: { legend: { labels: { font: { size: 11 } } } },
           scales: {
-            y:  { position: 'left',  title: { display: true, text: '°C' },      grid: { color: '#f0e0ff' } },
-            y1: { position: 'right', title: { display: true, text: 'Chuva %' }, min: 0, max: 100, grid: { display: false } }
+            y:  { position:'left',  title:{ display:true, text:'°C' },      grid:{ color:'#f0e0ff' } },
+            y1: { position:'right', title:{ display:true, text:'Chuva %' }, min:0, max:100, grid:{ display:false } }
           }
         }
       });
@@ -395,9 +473,12 @@
     }
   }
 
-  // inicializa o select com as fazendas de exemplo
-  popularSelect();
+  // carrega fazendas já na sessão (se houver)
+  fetch('/api/fazendas').then(r => r.json()).then(data => {
+    fazendas = data;
+    fazendas.forEach(f => adicionarMarcador(f));
+    renderLista();
+  });
 </script>
-
 </body>
 </html>

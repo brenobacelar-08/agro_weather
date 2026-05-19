@@ -31,16 +31,41 @@ def index():
 
 @app.route("/api/fazendas", methods=["GET"])
 def listar_fazendas():
-    fazendas_sessao = session.get("fazendas")
-    if fazendas_sessao:
-        return jsonify(fazendas_sessao)
+    return jsonify(session.get("fazendas", []))
 
-    # fallback para as fazendas de exemplo do config.py
-    fazendas = [
-        {"id": i, "nome": k, "lat": v["lat"], "lon": v["lon"], "cultura": v["cultura"]}
-        for i, (k, v) in enumerate(FAZENDAS.items())
-    ]
-    return jsonify(fazendas)
+
+@app.route("/api/fazendas", methods=["POST"])
+def adicionar_fazenda():
+    data = request.get_json()
+    try:
+        lat = float(data.get("lat", ""))
+        lon = float(data.get("lon", ""))
+    except (ValueError, TypeError):
+        return jsonify({"ok": False, "erro": "Latitude e longitude devem ser números."})
+
+    if not (-90 <= lat <= 90) or not (-180 <= lon <= 180):
+        return jsonify({"ok": False, "erro": "Coordenadas fora do intervalo válido."})
+
+    fazendas = session.get("fazendas", [])
+    nova = {
+        "id": len(fazendas),
+        "nome": data.get("nome", "").strip() or f"Ponto {len(fazendas)+1}",
+        "lat": lat,
+        "lon": lon,
+        "cultura": data.get("cultura", "soja"),
+    }
+    fazendas.append(nova)
+    session["fazendas"] = fazendas
+    session.modified = True
+    return jsonify({"ok": True, "fazenda": nova})
+
+
+@app.route("/api/fazendas/<int:fid>", methods=["DELETE"])
+def remover_fazenda(fid):
+    fazendas = session.get("fazendas", [])
+    session["fazendas"] = [f for f in fazendas if f["id"] != fid]
+    session.modified = True
+    return jsonify({"ok": True})
 
 
 @app.route("/api/fazendas/upload", methods=["POST"])
