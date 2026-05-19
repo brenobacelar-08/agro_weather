@@ -16,7 +16,10 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "climaiagro-secret-2024")
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///climaiagro.db"
+db_url = os.getenv("DATABASE_URL", "sqlite:////tmp/climaiagro.db")
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)

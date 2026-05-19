@@ -8,7 +8,7 @@ TTL = {
     "horaria": 60 * 60,
 }
 
-CACHE_FILE = "output/cache.json"
+CACHE_FILE = "/tmp/agro_cache.json"
 _memoria = {}
 
 
@@ -23,7 +23,6 @@ def _carregar():
 
 
 def _salvar():
-    os.makedirs("output", exist_ok=True)
     try:
         with open(CACHE_FILE, "w") as f:
             json.dump(_memoria, f)
