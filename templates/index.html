@@ -14,18 +14,12 @@
   header {
     background: linear-gradient(135deg,#4a0070,#660099);
     color: white; padding: 12px 24px;
-    display: flex; align-items: center; justify-content:space-between;
+    display: flex; align-items: center; gap: 14px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
     position: fixed; top:0; left:0; right:0; z-index:1000;
   }
   header h1 { font-size:18px; font-weight:700; }
   header p  { font-size:11px; opacity:0.8; margin-top:2px; }
-  .nav-links { display:flex; gap:12px; align-items:center; }
-  .nav-links a {
-    color:white; text-decoration:none; font-size:13px;
-    padding:6px 12px; border-radius:6px; transition:background 0.2s;
-  }
-  .nav-links a:hover { background:rgba(255,255,255,0.15); }
 
   .container { display:flex; height:100vh; padding-top:52px; }
 
@@ -84,21 +78,44 @@
     background:white; border-radius:10px;
     padding:12px; border:1px solid #e0d0f0;
   }
+
+  /* Upload */
+  .upload-area {
+    border: 2px dashed #d0a8f0;
+    border-radius:10px; padding:16px;
+    text-align:center; cursor:pointer;
+    transition: all 0.2s; background:#faf5ff;
+  }
+  .upload-area:hover { border-color:#660099; background:#f3e5ff; }
+  .upload-area.dragover { border-color:#660099; background:#f3e5ff; }
+  .upload-area p { font-size:13px; color:#660099; margin-top:6px; }
+  .upload-area small { font-size:11px; color:#999; }
+
+  #upload-input { display:none; }
+
+  .upload-status {
+    font-size:12px; padding:8px 12px; border-radius:8px;
+    display:none;
+  }
+  .upload-ok    { background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; }
+  .upload-erro  { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
+
+  .btn-limpar {
+    width:100%; padding:8px;
+    background:white; border:2px solid #e0d0f0;
+    border-radius:8px; color:#666; font-size:12px;
+    cursor:pointer; transition:all 0.2s; display:none;
+  }
+  .btn-limpar:hover { border-color:#c62828; color:#c62828; }
 </style>
 </head>
 <body>
 
 <header>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span style="font-size:24px">🌾</span>
-    <div>
-      <h1>Clima IAgro</h1>
-      <p>Recomendações climáticas inteligentes para o agronegócio</p>
-    </div>
-  </div>
-  <div class="nav-links">
-    <a href="/fazendas">🏡 Minhas Fazendas</a>
-    <a href="/auth/logout">Sair</a>
+  <div style="font-size:28px">🌾</div>
+  <div>
+    <h1>Clima IAgro</h1>
+    <p>Recomendações climáticas inteligentes para o agronegócio</p>
   </div>
 </header>
 
@@ -106,6 +123,30 @@
 
   <div id="sidebar">
 
+    <!-- UPLOAD -->
+    <div>
+      <div class="secao-titulo" style="margin-bottom:8px">📂 Base Geográfica</div>
+
+      <div class="upload-area" onclick="document.getElementById('upload-input').click()"
+           ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">
+        <div style="font-size:28px">📁</div>
+        <p>Clique ou arraste seu arquivo aqui</p>
+        <small>CSV ou GeoJSON com fazendas</small>
+      </div>
+      <input type="file" id="upload-input" accept=".csv,.geojson,.json" onchange="uploadArquivo(this.files[0])">
+
+      <div id="upload-status" class="upload-status" style="margin-top:8px;"></div>
+
+      <button class="btn-limpar" id="btn-limpar" onclick="limparBase()">
+        ✕ Remover base carregada e usar exemplos
+      </button>
+
+      <div style="margin-top:8px; font-size:11px; color:#aaa;">
+        CSV esperado: colunas <code>nome, lat, lon, cultura</code>
+      </div>
+    </div>
+
+    <!-- SELEÇÃO DE FAZENDA -->
     <div>
       <div class="secao-titulo" style="margin-bottom:8px">📍 Selecione a Fazenda</div>
       <select id="select-fazenda" onchange="carregarFazenda()">
@@ -183,62 +224,132 @@
 
   let marker = null;
   let grafico = null;
+  let marcadores = [];
 
-  async function inicializar() {
-    const res = await fetch("/api/fazendas");
+  // ─── UPLOAD ───────────────────────────────────────────
+
+  function dragOver(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('dragover');
+  }
+  function dragLeave(e) { e.currentTarget.classList.remove('dragover'); }
+  function drop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('dragover');
+    uploadArquivo(e.dataTransfer.files[0]);
+  }
+
+  async function uploadArquivo(arquivo) {
+    if (!arquivo) return;
+    const status = document.getElementById('upload-status');
+    status.className = 'upload-status';
+    status.style.display = 'block';
+    status.textContent = '⏳ Processando arquivo...';
+
+    const form = new FormData();
+    form.append('arquivo', arquivo);
+
+    const res  = await fetch('/api/fazendas/upload', { method: 'POST', body: form });
+    const data = await res.json();
+
+    if (data.ok) {
+      status.className = 'upload-status upload-ok';
+      status.textContent = `✅ ${data.total} fazenda(s) carregada(s) de "${arquivo.name}"`;
+      document.getElementById('btn-limpar').style.display = 'block';
+      await popularSelect();
+      adicionarMarcadores(data.fazendas);
+    } else {
+      status.className = 'upload-status upload-erro';
+      status.textContent = `❌ ${data.erro}`;
+    }
+  }
+
+  async function limparBase() {
+    await fetch('/api/fazendas/limpar', { method: 'POST' });
+    document.getElementById('upload-status').style.display = 'none';
+    document.getElementById('btn-limpar').style.display = 'none';
+    document.getElementById('upload-input').value = '';
+    await popularSelect();
+    removerMarcadores();
+  }
+
+  // ─── SELECT / MAPA ────────────────────────────────────
+
+  async function popularSelect() {
+    const res = await fetch('/api/fazendas');
     const fazendas = await res.json();
-    const select = document.getElementById("select-fazenda");
+    const select = document.getElementById('select-fazenda');
+    select.innerHTML = '<option value="">— escolha uma fazenda —</option>';
     fazendas.forEach(f => {
-      const opt = document.createElement("option");
+      const opt = document.createElement('option');
       opt.value = `${f.lat},${f.lon},${f.cultura},${f.nome}`;
       opt.textContent = f.nome;
       select.appendChild(opt);
     });
+    return fazendas;
+  }
+
+  function adicionarMarcadores(fazendas) {
+    removerMarcadores();
+    fazendas.forEach(f => {
+      const m = L.marker([f.lat, f.lon])
+        .addTo(map)
+        .bindPopup(`<b>🌾 ${f.nome}</b><br>${f.cultura}`);
+      marcadores.push(m);
+    });
+    if (fazendas.length > 0) {
+      const bounds = L.latLngBounds(fazendas.map(f => [f.lat, f.lon]));
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }
+
+  function removerMarcadores() {
+    marcadores.forEach(m => map.removeLayer(m));
+    marcadores = [];
   }
 
   function classRec(texto) {
-    if (texto.includes("❌") || texto.includes("URGENTE") || texto.includes("ALERTA")) return "rec-alert";
-    if (texto.includes("⚠️") || texto.includes("Recomendado")) return "rec-warn";
-    return "rec-ok";
+    if (texto.includes('❌') || texto.includes('URGENTE') || texto.includes('ALERTA')) return 'rec-alert';
+    if (texto.includes('⚠️') || texto.includes('Recomendado')) return 'rec-warn';
+    return 'rec-ok';
   }
 
   async function carregarFazenda() {
-    const val = document.getElementById("select-fazenda").value;
+    const val = document.getElementById('select-fazenda').value;
     if (!val) return;
 
-    const [lat, lon, cultura, nome] = val.split(",");
+    const [lat, lon, cultura, nome] = val.split(',');
 
     if (marker) map.removeLayer(marker);
     marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>🌾 ${nome}</b>`).openPopup();
     map.setView([lat, lon], 13);
 
-    document.getElementById("loading").style.display = "block";
-    document.getElementById("conteudo").style.display = "none";
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('conteudo').style.display = 'none';
 
     try {
-      const res = await fetch(`/api/recomendacao?lat=${lat}&lon=${lon}&cultura=${cultura}`);
+      const res   = await fetch(`/api/recomendacao?lat=${lat}&lon=${lon}&cultura=${cultura}`);
       const dados = await res.json();
-
       if (!dados.ok) throw new Error(dados.erro);
 
-      document.getElementById("val-temp").textContent  = `${dados.atual.temp}°C`;
-      document.getElementById("val-umid").textContent  = `${dados.atual.umidade}%`;
-      document.getElementById("val-vento").textContent = `${dados.atual.vento}`;
-      document.getElementById("val-gd").textContent    = `${dados.atual.graus_dia}`;
+      document.getElementById('val-temp').textContent  = `${dados.atual.temp}°C`;
+      document.getElementById('val-umid').textContent  = `${dados.atual.umidade}%`;
+      document.getElementById('val-vento').textContent = `${dados.atual.vento}`;
+      document.getElementById('val-gd').textContent    = `${dados.atual.graus_dia}`;
 
       const irr = dados.recomendacoes.irrigacao;
-      document.getElementById("rec-irrigacao-texto").textContent = irr;
-      document.getElementById("rec-irrigacao").className = `rec-card ${classRec(irr)}`;
+      document.getElementById('rec-irrigacao-texto').textContent = irr;
+      document.getElementById('rec-irrigacao').className = `rec-card ${classRec(irr)}`;
 
       const pulv = dados.recomendacoes.pulverizacao;
-      document.getElementById("rec-pulv-texto").textContent = pulv;
-      document.getElementById("rec-pulv").className = `rec-card ${classRec(pulv)}`;
+      document.getElementById('rec-pulv-texto').textContent = pulv;
+      document.getElementById('rec-pulv').className = `rec-card ${classRec(pulv)}`;
 
-      const geada = dados.recomendacoes.geada.join(" | ");
-      document.getElementById("rec-geada-texto").textContent = geada;
-      document.getElementById("rec-geada").className = `rec-card ${classRec(geada)}`;
+      const geada = dados.recomendacoes.geada.join(' | ');
+      document.getElementById('rec-geada-texto').textContent = geada;
+      document.getElementById('rec-geada').className = `rec-card ${classRec(geada)}`;
 
-      const janelasEl = document.getElementById("janelas");
+      const janelasEl = document.getElementById('janelas');
       janelasEl.innerHTML = dados.janelas_pulverizacao.length
         ? dados.janelas_pulverizacao.map(j => `
             <div class="janela-item">
@@ -247,7 +358,7 @@
                 <span class="janela-badge">💨 ${j.vento} km/h</span>
                 <span class="janela-badge">🌧️ ${j.chuva}%</span>
               </div>
-            </div>`).join("")
+            </div>`).join('')
         : `<div style="color:#999;font-size:13px;">Nenhuma janela ideal nas próximas 48h</div>`;
 
       const labels = dados.previsao_dias.map(d => d.data.slice(5));
@@ -256,63 +367,36 @@
       const chuvas = dados.previsao_dias.map(d => d.chuva);
 
       if (grafico) grafico.destroy();
-      grafico = new Chart(document.getElementById("grafico"), {
-        type: "bar",
+      grafico = new Chart(document.getElementById('grafico'), {
+        type: 'bar',
         data: {
           labels,
           datasets: [
-            {
-              label: "Chuva (%)",
-              data: chuvas,
-              backgroundColor: "rgba(102,0,153,0.2)",
-              borderColor: "#660099",
-              borderWidth: 1,
-              yAxisID: "y1",
-              type: "bar"
-            },
-            {
-              label: "Máx °C",
-              data: maxs,
-              borderColor: "#d32f2f",
-              backgroundColor: "transparent",
-              borderWidth: 2,
-              type: "line",
-              yAxisID: "y",
-              tension: 0.4,
-              pointRadius: 3
-            },
-            {
-              label: "Mín °C",
-              data: mins,
-              borderColor: "#1976d2",
-              backgroundColor: "transparent",
-              borderWidth: 2,
-              type: "line",
-              yAxisID: "y",
-              tension: 0.4,
-              pointRadius: 3
-            }
+            { label: 'Chuva (%)', data: chuvas, backgroundColor: 'rgba(102,0,153,0.2)', borderColor: '#660099', borderWidth: 1, yAxisID: 'y1', type: 'bar' },
+            { label: 'Máx °C',   data: maxs,   borderColor: '#d32f2f', backgroundColor: 'transparent', borderWidth: 2, type: 'line', yAxisID: 'y', tension: 0.4, pointRadius: 3 },
+            { label: 'Mín °C',   data: mins,   borderColor: '#1976d2', backgroundColor: 'transparent', borderWidth: 2, type: 'line', yAxisID: 'y', tension: 0.4, pointRadius: 3 }
           ]
         },
         options: {
           responsive: true,
           plugins: { legend: { labels: { font: { size: 11 } } } },
           scales: {
-            y:  { position:"left",  title:{ display:true, text:"°C" }, grid:{ color:"#f0e0ff" } },
-            y1: { position:"right", title:{ display:true, text:"Chuva %" }, min:0, max:100, grid:{ display:false } }
+            y:  { position: 'left',  title: { display: true, text: '°C' },      grid: { color: '#f0e0ff' } },
+            y1: { position: 'right', title: { display: true, text: 'Chuva %' }, min: 0, max: 100, grid: { display: false } }
           }
         }
       });
 
-      document.getElementById("loading").style.display = "none";
-      document.getElementById("conteudo").style.display = "flex";
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('conteudo').style.display = 'flex';
 
     } catch(e) {
-      document.getElementById("loading").textContent = `❌ Erro: ${e.message}`;
+      document.getElementById('loading').textContent = `❌ Erro: ${e.message}`;
     }
   }
 
-  inicializar();
+  // inicializa o select com as fazendas de exemplo
+  popularSelect();
 </script>
 
 </body>

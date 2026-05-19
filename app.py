@@ -1,7 +1,5 @@
-from flask import Flask, jsonify, render_template, request, redirect, url_for
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask import Flask, jsonify, render_template, request, session
 from dotenv import load_dotenv
-from models import db, bcrypt, Usuario, Fazenda
 from weather_client import get_condicoes_atuais, get_previsao_diaria, get_previsao_horaria
 from agro_analysis import (
     analisar_para_irrigacao,
@@ -9,134 +7,130 @@ from agro_analysis import (
     analisar_geada,
     calcular_graus_dia
 )
+from config import FAZENDAS
 import cache
 import os
+import json
+import csv
+import io
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "climaiagro-secret-2024")
-db_url = os.getenv("DATABASE_URL", "sqlite:////tmp/climaiagro.db")
-if db_url.startswith("postgres://"):
-    db_url = db_url.replace("postgres://", "postgresql://", 1)
-app.config["SQLALCHEMY_DATABASE_URI"] = db_url
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-db.init_app(app)
-bcrypt.init_app(app)
-
-login_manager = LoginManager(app)
-login_manager.login_view = "login_page"
-
-@login_manager.user_loader
-def load_user(user_id):
-    return Usuario.query.get(int(user_id))
-
-with app.app_context():
-    db.create_all()
 
 
 # ─── PÁGINAS ────────────────────────────────────────────
 
 @app.route("/")
-@login_required
 def index():
     return render_template("index.html")
-
-
-@app.route("/login")
-def login_page():
-    return render_template("login.html")
-
-
-@app.route("/fazendas")
-@login_required
-def pagina_fazendas():
-    fazendas = Fazenda.query.filter_by(usuario_id=current_user.id).all()
-    return render_template("fazendas.html",
-                           usuario=current_user,
-                           fazendas=fazendas)
-
-
-# ─── AUTH ────────────────────────────────────────────────
-
-@app.route("/auth/cadastro", methods=["POST"])
-def cadastro():
-    data = request.get_json()
-    if Usuario.query.filter_by(email=data["email"]).first():
-        return jsonify({"ok": False, "erro": "E-mail já cadastrado."})
-    if len(data["senha"]) < 6:
-        return jsonify({"ok": False, "erro": "Senha deve ter mínimo 6 caracteres."})
-
-    usuario = Usuario(nome=data["nome"], email=data["email"], plano=data.get("plano", "basico"))
-    usuario.set_senha(data["senha"])
-    db.session.add(usuario)
-    db.session.commit()
-    login_user(usuario)
-    return jsonify({"ok": True})
-
-
-@app.route("/auth/login", methods=["POST"])
-def fazer_login():
-    data = request.get_json()
-    usuario = Usuario.query.filter_by(email=data["email"]).first()
-    if not usuario or not usuario.check_senha(data["senha"]):
-        return jsonify({"ok": False, "erro": "E-mail ou senha incorretos."})
-    login_user(usuario)
-    return jsonify({"ok": True})
-
-
-@app.route("/auth/logout")
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for("login_page"))
 
 
 # ─── API FAZENDAS ─────────────────────────────────────────
 
 @app.route("/api/fazendas", methods=["GET"])
-@login_required
 def listar_fazendas():
-    fazendas = Fazenda.query.filter_by(usuario_id=current_user.id).all()
-    return jsonify([f.to_dict() for f in fazendas])
+    fazendas_sessao = session.get("fazendas")
+    if fazendas_sessao:
+        return jsonify(fazendas_sessao)
+
+    # fallback para as fazendas de exemplo do config.py
+    fazendas = [
+        {"id": i, "nome": k, "lat": v["lat"], "lon": v["lon"], "cultura": v["cultura"]}
+        for i, (k, v) in enumerate(FAZENDAS.items())
+    ]
+    return jsonify(fazendas)
 
 
-@app.route("/api/fazendas", methods=["POST"])
-@login_required
-def criar_fazenda():
-    count = Fazenda.query.filter_by(usuario_id=current_user.id).count()
-    if count >= current_user.limite_fazendas:
-        return jsonify({"ok": False, "erro": f"Limite do plano {current_user.plano} atingido."})
+@app.route("/api/fazendas/upload", methods=["POST"])
+def upload_fazendas():
+    if "arquivo" not in request.files:
+        return jsonify({"ok": False, "erro": "Nenhum arquivo enviado."})
 
-    data = request.get_json()
-    fazenda = Fazenda(
-        nome=data["nome"],
-        lat=data["lat"],
-        lon=data["lon"],
-        cultura=data["cultura"],
-        usuario_id=current_user.id
-    )
-    db.session.add(fazenda)
-    db.session.commit()
-    return jsonify({"ok": True, "fazenda": fazenda.to_dict()})
+    arquivo = request.files["arquivo"]
+    nome = arquivo.filename.lower()
+
+    try:
+        if nome.endswith(".csv"):
+            fazendas = _parsear_csv(arquivo)
+        elif nome.endswith(".geojson") or nome.endswith(".json"):
+            fazendas = _parsear_geojson(arquivo)
+        else:
+            return jsonify({"ok": False, "erro": "Formato não suportado. Use CSV ou GeoJSON."})
+
+        if not fazendas:
+            return jsonify({"ok": False, "erro": "Nenhuma fazenda encontrada no arquivo."})
+
+        session["fazendas"] = fazendas
+        return jsonify({"ok": True, "total": len(fazendas), "fazendas": fazendas})
+
+    except Exception as e:
+        return jsonify({"ok": False, "erro": f"Erro ao processar arquivo: {str(e)}"})
 
 
-@app.route("/api/fazendas/<int:fid>", methods=["DELETE"])
-@login_required
-def apagar_fazenda(fid):
-    fazenda = Fazenda.query.filter_by(id=fid, usuario_id=current_user.id).first()
-    if not fazenda:
-        return jsonify({"ok": False, "erro": "Fazenda não encontrada."})
-    db.session.delete(fazenda)
-    db.session.commit()
+@app.route("/api/fazendas/limpar", methods=["POST"])
+def limpar_fazendas():
+    session.pop("fazendas", None)
     return jsonify({"ok": True})
+
+
+def _parsear_csv(arquivo) -> list:
+    """
+    Aceita CSV com colunas: nome, lat, lon, cultura
+    A ordem das colunas não importa, mas os nomes sim.
+    """
+    texto = arquivo.read().decode("utf-8-sig")
+    reader = csv.DictReader(io.StringIO(texto))
+
+    # normaliza nomes de colunas (remove espaços, lowercase)
+    reader.fieldnames = [c.strip().lower() for c in reader.fieldnames]
+
+    fazendas = []
+    for i, row in enumerate(reader):
+        row = {k.strip().lower(): v.strip() for k, v in row.items()}
+        fazendas.append({
+            "id": i,
+            "nome": row.get("nome") or row.get("name") or f"Fazenda {i+1}",
+            "lat": float(row.get("lat") or row.get("latitude")),
+            "lon": float(row.get("lon") or row.get("longitude") or row.get("lng")),
+            "cultura": row.get("cultura") or row.get("culture") or row.get("crop") or "soja",
+        })
+    return fazendas
+
+
+def _parsear_geojson(arquivo) -> list:
+    """
+    Aceita GeoJSON FeatureCollection com Point features.
+    Propriedades esperadas: nome, lat, lon (ou extrai da geometry), cultura
+    """
+    dados = json.loads(arquivo.read().decode("utf-8"))
+    features = dados.get("features", [])
+
+    fazendas = []
+    for i, feat in enumerate(features):
+        props = {k.lower(): v for k, v in feat.get("properties", {}).items()}
+        geom = feat.get("geometry", {})
+
+        if geom.get("type") == "Point":
+            lon, lat = geom["coordinates"][0], geom["coordinates"][1]
+        else:
+            lat = float(props.get("lat") or props.get("latitude", 0))
+            lon = float(props.get("lon") or props.get("longitude") or props.get("lng", 0))
+
+        fazendas.append({
+            "id": i,
+            "nome": props.get("nome") or props.get("name") or f"Fazenda {i+1}",
+            "lat": lat,
+            "lon": lon,
+            "cultura": props.get("cultura") or props.get("culture") or props.get("crop") or "soja",
+        })
+    return fazendas
 
 
 # ─── API CLIMA ────────────────────────────────────────────
 
 @app.route("/api/recomendacao")
-@login_required
 def recomendacao():
     lat     = float(request.args.get("lat"))
     lon     = float(request.args.get("lon"))
@@ -192,7 +186,6 @@ def recomendacao():
 
 
 @app.route("/api/cache/stats")
-@login_required
 def cache_stats():
     return jsonify(cache.stats())
 

@@ -1,7 +1,4 @@
 flask
-flask-login
-flask-sqlalchemy
-flask-bcrypt
 gunicorn
 requests
 python-dotenv
