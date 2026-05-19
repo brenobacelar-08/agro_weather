@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clima IAgro — Minhas Fazendas</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Segoe UI',sans-serif; background:#f4f0f8; }
+
+  header {
+    background:linear-gradient(135deg,#4a0070,#660099);
+    color:white; padding:12px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 10px rgba(0,0,0,0.3);
+  }
+  header h1 { font-size:18px; }
+  .nav-links { display:flex; gap:16px; align-items:center; }
+  .nav-links a {
+    color:white; text-decoration:none; font-size:13px; opacity:0.85;
+    padding:6px 12px; border-radius:6px; transition:background 0.2s;
+  }
+  .nav-links a:hover { background:rgba(255,255,255,0.15); }
+  .nav-links a.ativo { background:rgba(255,255,255,0.2); font-weight:600; }
+
+  .container { max-width:800px; margin:32px auto; padding:0 20px; }
+
+  .page-title { font-size:20px; font-weight:700; color:#4a0070; margin-bottom:6px; }
+  .page-sub { font-size:13px; color:#888; margin-bottom:24px; }
+
+  .plano-badge {
+    display:inline-block; padding:3px 12px;
+    background:#f3e5ff; color:#660099;
+    border-radius:20px; font-size:12px;
+    font-weight:600; margin-bottom:20px; border:1px solid #d0a8f0;
+  }
+
+  .fazenda-card {
+    background:white; border-radius:12px; padding:16px 20px; margin-bottom:12px;
+    display:flex; align-items:center; justify-content:space-between;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08); border:1px solid #f0e0ff;
+  }
+  .fazenda-info h3 { font-size:15px; color:#333; }
+  .fazenda-info p  { font-size:12px; color:#888; margin-top:3px; }
+  .fazenda-acoes { display:flex; gap:8px; }
+
+  .btn-acao {
+    padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600;
+    cursor:pointer; border:none; transition:opacity 0.2s;
+  }
+  .btn-ver    { background:#660099; color:white; text-decoration:none; }
+  .btn-apagar { background:#ffebee; color:#c62828; }
+  .btn-acao:hover { opacity:0.85; }
+
+  .btn-nova {
+    width:100%; padding:14px;
+    background:linear-gradient(135deg,#4a0070,#660099);
+    color:white; border:none; border-radius:10px;
+    font-size:14px; font-weight:600; cursor:pointer;
+    margin-top:8px; transition:opacity 0.2s;
+  }
+  .btn-nova:hover { opacity:0.9; }
+
+  .modal-bg {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.5); z-index:100;
+    align-items:center; justify-content:center;
+  }
+  .modal-bg.aberto { display:flex; }
+  .modal {
+    background:white; border-radius:14px; padding:28px;
+    width:100%; max-width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal h2 { font-size:16px; color:#4a0070; margin-bottom:20px; }
+  .form-group { margin-bottom:14px; }
+  label { display:block; font-size:12px; font-weight:600; color:#555; margin-bottom:5px; }
+  input, select {
+    width:100%; padding:9px 12px; border-radius:7px;
+    border:2px solid #e0d0f0; font-size:13px; outline:none;
+  }
+  input:focus, select:focus { border-color:#660099; }
+  .modal-btns { display:flex; gap:10px; margin-top:20px; }
+  .btn-cancelar {
+    flex:1; padding:10px; border-radius:7px;
+    border:2px solid #e0d0f0; background:white; color:#666; font-size:13px; cursor:pointer;
+  }
+  .btn-salvar {
+    flex:2; padding:10px; border-radius:7px;
+    background:linear-gradient(135deg,#4a0070,#660099);
+    color:white; border:none; font-size:13px; font-weight:600; cursor:pointer;
+  }
+
+  .limite-aviso {
+    background:#fff8e1; border-left:4px solid #f9a825;
+    padding:10px 14px; border-radius:8px;
+    font-size:13px; color:#6d4c00; margin-bottom:16px; display:none;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span style="font-size:24px">🌾</span>
+    <div>
+      <h1>Clima IAgro</h1>
+      <p style="font-size:11px;opacity:0.8">Olá, {{ usuario.nome.split()[0] }}!</p>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="/fazendas" class="ativo">🏡 Minhas Fazendas</a>
+    <a href="/">🗺️ Mapa</a>
+    <a href="/auth/logout">Sair</a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="page-title">🏡 Minhas Fazendas</div>
+  <div class="page-sub">Gerencie as propriedades monitoradas pelo Clima IAgro</div>
+
+  <div class="plano-badge">
+    Plano {{ usuario.plano.capitalize() }} —
+    {{ fazendas|length }}/{{ usuario.limite_fazendas }} fazendas
+  </div>
+
+  <div id="limite-aviso" class="limite-aviso">
+    ⚠️ Você atingiu o limite do seu plano. Faça upgrade para adicionar mais fazendas.
+  </div>
+
+  <div id="lista-fazendas">
+    {% for f in fazendas %}
+    <div class="fazenda-card" id="fazenda-{{ f.id }}">
+      <div class="fazenda-info">
+        <h3>🌾 {{ f.nome }}</h3>
+        <p>{{ f.cultura.capitalize() }} · {{ f.lat }}, {{ f.lon }}</p>
+      </div>
+      <div class="fazenda-acoes">
+        <a href="/?fazenda={{ f.lat }},{{ f.lon }},{{ f.cultura }},{{ f.nome }}"
+           class="btn-acao btn-ver">Ver no mapa</a>
+        <button class="btn-acao btn-apagar"
+                onclick="apagarFazenda({{ f.id }}, '{{ f.nome }}')">Remover</button>
+      </div>
+    </div>
+    {% endfor %}
+
+    {% if fazendas|length == 0 %}
+    <div style="text-align:center;color:#aaa;padding:40px;font-size:14px;">
+      Nenhuma fazenda cadastrada ainda.<br>Clique em "Nova fazenda" para começar!
+    </div>
+    {% endif %}
+  </div>
+
+  <button class="btn-nova" onclick="abrirModal()">+ Nova fazenda</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h2>➕ Adicionar fazenda</h2>
+    <div id="erro-modal" style="display:none;background:#ffebee;color:#c62828;
+         padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:12px;"></div>
+    <div class="form-group">
+      <label>Nome da fazenda</label>
+      <input type="text" id="f-nome" placeholder="Ex: Fazenda Boa Vista">
+    </div>
+    <div class="form-group">
+      <label>Cultura principal</label>
+      <select id="f-cultura">
+        <option value="soja">Soja</option>
+        <option value="milho">Milho</option>
+        <option value="cafe">Café</option>
+        <option value="cana">Cana-de-açúcar</option>
+        <option value="algodao">Algodão</option>
+        <option value="trigo">Trigo</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Latitude</label>
+      <input type="number" id="f-lat" placeholder="-15.7801" step="0.0001">
+    </div>
+    <div class="form-group">
+      <label>Longitude</label>
+      <input type="number" id="f-lon" placeholder="-47.9292" step="0.0001">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarFazenda()">Salvar fazenda</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const limiteAtingido = {{ (fazendas|length >= usuario.limite_fazendas)|tojson }};
+
+  function abrirModal() {
+    if (limiteAtingido) {
+      document.getElementById('limite-aviso').style.display = 'block';
+      return;
+    }
+    document.getElementById('modal').classList.add('aberto');
+  }
+
+  function fecharModal() {
+    document.getElementById('modal').classList.remove('aberto');
+    document.getElementById('erro-modal').style.display = 'none';
+  }
+
+  async function salvarFazenda() {
+    const nome    = document.getElementById('f-nome').value;
+    const cultura = document.getElementById('f-cultura').value;
+    const lat     = parseFloat(document.getElementById('f-lat').value);
+    const lon     = parseFloat(document.getElementById('f-lon').value);
+    const erro    = document.getElementById('erro-modal');
+
+    if (!nome || isNaN(lat) || isNaN(lon)) {
+      erro.textContent = 'Preencha todos os campos corretamente.';
+      erro.style.display = 'block';
+      return;
+    }
+
+    const res  = await fetch('/api/fazendas', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({nome, cultura, lat, lon})
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      window.location.reload();
+    } else {
+      erro.textContent = data.erro;
+      erro.style.display = 'block';
+    }
+  }
+
+  async function apagarFazenda(id, nome) {
+    if (!confirm(`Remover "${nome}"?`)) return;
+    const res  = await fetch(`/api/fazendas/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.ok) document.getElementById(`fazenda-${id}`).remove();
+  }
+</script>
+</body>
+</html>
